@@ -28,7 +28,7 @@ with open("input.txt", "r") as stuff:
         #                exit(1)
 
         # Rnd2: any overlap
-        if ((max1 >= min2) and (min1 <= max2)) or (max2 > min1) and (min2 > max1:
+        if not ((max1 < min2) or (max2 < min1)):
             rnd2_total += 1
 
     print("Rnd1_total: ", rnd1_total)
