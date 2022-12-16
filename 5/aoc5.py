@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import re
+import copy
 
 """
 Reading the input stepped up a little in difficulty
@@ -63,10 +64,11 @@ with open("input.txt", "r") as stuff:
 
     # Populate the 'stacks' data structure
     stacks = learn_stacks(lines)
-    print(stacks)
 
-    # move 2 from 1 to 7
-    print("Crane is working")
+    # Remember, we can't just copy a list or dict directly very easily.
+    stacks2 = copy.deepcopy(stacks)  # Just prep for Rnd 2
+
+    # Rnd1
     for line in lines:
         m = re.search(r"move\s(\d+)\sfrom\s(\d+)\sto\s(\d+)", line)
         if m:
@@ -78,9 +80,28 @@ with open("input.txt", "r") as stuff:
                 crate = stacks[f_stack].pop()
                 stacks[t_stack].append(crate)
 
-    print(stacks)
     output = ""
     for i in range(len(stacks)):
         output += stacks[i + 1].pop()
 
-    print(output)
+    print("Rnd1 top crates: ", output)
+
+    # Rnd2
+    for line in lines:
+        m = re.search(r"move\s(\d+)\sfrom\s(\d+)\sto\s(\d+)", line)
+        if m:
+            moves = int(m.group(1))
+            f_stack = int(m.group(2))
+            t_stack = int(m.group(3))
+
+            # Take moves # of crates off a stack and append them to the other.
+            crates = stacks2[f_stack][-moves:]
+            del stacks2[f_stack][-moves:]
+            stacks2[t_stack].extend(crates)
+
+    output = ""
+    for i in range(len(stacks2)):
+        if len(stacks2[i + 1]) > 0:
+            output += stacks2[i + 1].pop()
+
+    print("Rnd2 top crates: ", output)
