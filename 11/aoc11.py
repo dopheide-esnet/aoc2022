@@ -49,8 +49,8 @@ class Monkey:
 
 
 ## INITIALIZE
-testcase = True
-Rnd1 = True
+testcase = False
+Rnd1 = False
 Worry_Cleanup = False
 if testcase:
     monkeys = [
@@ -89,6 +89,11 @@ if Rnd1:
 else:
     num_rounds = 10000
 
+# determine common factor we'll need later for Rnd2
+factor = 1
+for monkey in monkeys:
+    factor *= monkey.test
+
 for round in range(num_rounds):
     if round % 100 == 0:
         print("Round: ", round)
@@ -114,6 +119,13 @@ for round in range(num_rounds):
 
             # For Rnd2.. gotta keep those numbers small
             # Messing with precision does not work.
+
+            # If we're a monkey that sucks, do some trickery,
+            # divide by a common factor.
+            # Can we always do this?  Probably, but whatever.
+            if not Worry_Cleanup:
+                if "old * old" in monkey.op and new_item > factor:
+                    new_item = factor + new_item % factor
 
             # throw
             monkeys[target].items.append(new_item)
