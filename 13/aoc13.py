@@ -1,183 +1,166 @@
 #!/usr/bin/env python3
 
-"""
-Oh sure, my tricorder can't talk to the elves, but it can provide a detailed topigraphical map no problem!
-
-For Rnd2, we start to track the full path to a given location.  Then just reverse the shortest path.
-
-"""
-
-import sys
-
-# Welp...  if this doesn't work we can try saving state and restarting
-sys.setrecursionlimit(2000)
+import json
+import copy
 
 
-class Location:
-    def __init__(self, x, y, loc, distance, path):
-        self.x = x
-        self.y = y
-        self.smallest_distance = distance
-        self.path = path
+def Compare(one, two):
 
+    ## I think this check is only relevant at the top layer.
+    # except we also need to know when to proceed...
+    # seems like it's relevant if we ever run out of items between two lists.
+    # print("Comparing:", one, "\n            ", two)
 
-op_counter = 0
+    if len(one) != len(two):
+        if len(one) == 0:
+            return 1
+        elif len(two) == 0:
+            return 0
 
-
-def Build_Map(*argv):
-    """
-    Build our map from the input, but also convert it to integers to make comparisons easier
-    """
-    my_map = []
-
-    if len(argv) == 0:
-        stuff = """Sabqponm
-abcryxxl
-accszExk
-acctuvwj
-abdefghi
-"""
-        lines = stuff.splitlines()
-
-    else:
-        lines = argv[0]
-
-    row = 0
-    for line in lines:
-        # watch out for start and end positions, S and E
-        ess = line.find("S")
-        eee = line.find("E")
-        if ess != -1:
-            start = [ess, row]
-        if eee != -1:
-            end = [eee, row]
-        line = list(line)
-        my_map.append(line)
-        row += 1
-
-    my_map[start[1]][start[0]] = "a"
-    my_map[end[1]][end[0]] = "z"
-
-    return my_map, start, end
-
-
-def Print_Map(my_map, locations):
-    for y in range(len(my_map)):
-        for x in range(len(my_map[0])):
-            if (x, y) in locations:
-                print(".", end="")
+    while len(one) > 0 and len(two) > 0:
+        left = one.pop(0)
+        right = two.pop(0)
+        if type(left) == type(right):
+            if isinstance(left, int):
+                # Integers
+                # we can compare this shit
+                # print("Comparing:", left, right)
+                if left < right:
+                    # correct order
+                    return 1
+                elif right < left:
+                    # incorrect order
+                    return 0
+                else:
+                    continue
             else:
-                print(my_map[y][x], end="")
-        print()
-    return
+                # they are lists
+
+                # both lists to compare are empty
+                if len(left) == 0 and len(right) == 0:
+                    continue
+
+                val = Compare(left, right)
+                if val == 1:
+                    return 1
+                elif val == 0:
+                    return 0
+                # else, do nothing
+
+        else:
+            if isinstance(left, int):
+                one = [left]
+                val = Compare(one, right)
+            else:
+                two = [right]
+                val = Compare(left, two)
+
+            if val == 1:
+                return 1
+            elif val == 0:
+                return 0
+            # print("Type conversion, continue")
+            # continue
+
+    if len(one) == 0:
+        return 1
+    elif len(two) == 0:
+        return 0
+    return 2  # do nothing
 
 
-def Go_Next(path, distance, prevx, prevy, x, y, my_map, locations):
-    """Try going to our surrounding locations, ignoring where we just came from"""
+def Sorty_McSorter(Rnd2, Output):
+    """Rnd2"""
 
-    path1 = path.copy()
-    path2 = path.copy()
-    path3 = path.copy()
-    path4 = path.copy()
+    """ Wait.. why do I care about efficiency?  Just compare all of them each time """
+    while len(Rnd2) > 0:
+        nPacket = Rnd2.pop(0)
+        for i in range(len(Output)):
 
-    if distance > 500:
-        # Yeah.. unlikely, stop trying.
-        # Also if we let it go we'll overrun the stack.
-        return
-
-    # Go Up
-    if y < len(my_map) - 1 and (y + 1) != prevy:
-        if (ord(my_map[y + 1][x]) - ord(my_map[y][x])) <= 1:
-            Go(path1, distance + 1, x, y, x, y + 1, my_map, locations)
-    # Go Down
-    if y > 0 and (y - 1) != prevy:
-        if (ord(my_map[y - 1][x]) - ord(my_map[y][x])) <= 1:
-            Go(path2, distance + 1, x, y, x, y - 1, my_map, locations)
-    # Go Right
-    if x < len(my_map[0]) - 1 and (x + 1) != prevx:
-        if (ord(my_map[y][x + 1]) - ord(my_map[y][x])) <= 1:
-            Go(path3, distance + 1, x, y, x + 1, y, my_map, locations)
-    # Go Left
-    if x > 0 and (x - 1) != prevx:
-        if (ord(my_map[y][x - 1]) - ord(my_map[y][x])) <= 1:
-            Go(path4, distance + 1, x, y, x - 1, y, my_map, locations)
-
-    return
+            if Compare(copy.deepcopy(Output[i]), copy.deepcopy(nPacket)):
+                # we're at the end, add it.
+                if i == len(Output) - 1:
+                    Output.insert(i + 1, nPacket)
+            else:
+                Output.insert(i, nPacket)
+                break
 
 
-def Go(path, distance, prevx, prevy, x, y, my_map, locations):
-    global op_counter
-    op_counter += 1
-
-    path.append((x, y))
-
-    # basically is b - a <= 1
-    if (x, y) not in locations:
-        locations[(x, y)] = Location(x, y, (x, y), distance, path)
-        # continue going this way
-        Go_Next(path, distance, prevx, prevy, x, y, my_map, locations)
-    else:
-        # we're in locations, if distance is less, update, if it's more, quit.
-        # print("already been here, need to Go_Next")
-        # also if it's less, we have to keep exploring from here since everything from here
-        # will also be less (UH OH)
-        if distance < locations[(x, y)].smallest_distance:
-            locations[(x, y)].smallest_distance = distance
-            locations[(x, y)].path = path
-            Go_Next(path, distance, prevx, prevy, x, y, my_map, locations)
-    return
-
-
-def Find_First_A(path, my_map):
-    path.reverse()
-    for i in range(len(path)):
-        (x, y) = path[i]
-        if my_map[y][x] == "a":
-            return i - 1
-
-
-##########
-#  MAIN  #
-##########
+#  Unfinished binary sort, screw that!  Make the computer work!
+#    while len(Rnd2) > 0:
+#        nPacket = Rnd2.pop(0)
+#        print(nPacket)
+#        half = int(len(Output) / 2)
+#        print("start here:", half)
+#        if Compare(copy.deepcopy(Output[half]), copy.deepcopy(nPacket)):
+# new packet goes after this index.
+#            if(len(half)<=1):
+#                Output.insert(half + 1, nPacket)
+#                return
+#        else:
+#            if(len(half)<=1)
+#                Output.insert(half, nPacket)
+#                return
 
 testcase = False
 if testcase:
-    (my_map, start, end) = Build_Map()
+
+    inputfile = "test_rnd2.txt"
 else:
-    with open("input.txt", "r") as stuff:
-        lines = stuff.read().splitlines()
-        (my_map, start, end) = Build_Map(lines)
+    inputfile = "input_rnd2.txt"
 
-print("Start:", start)
-print("End:", end)
+with open(inputfile, "r") as stuff:
+    lines = stuff.read().splitlines()
 
-locations = {}  #  (x,y) tuple
-attempts = []
-distance = 0
+    total = len(lines)
+    i = 0
+    pair_index = 1
+    Rnd1_total = 0
+    while i < total:
+        one = json.loads(lines[i])
+        two = json.loads(lines[i + 1])
+        i += 3
 
-# We always start on the left edge, pretend previous x was off the edge
-Go_Next(
-    [(start[0], start[1])],
-    distance,
-    -1,
-    start[1],
-    start[0],
-    start[1],
-    my_map,
-    locations,
-)
+        val = Compare(one, two)
+        if val == 1:
+            # print("Correct order")
+            Rnd1_total += pair_index
+        #        elif val == 0:
+        # print("Incorrect order")
+        #        else:
+        #            print("Error, top level should never get here")
+        pair_index += 1
+        #        print("\n======NEXT======\n")
 
-if testcase:
-    for loc in locations:
-        print(loc, locations[loc].smallest_distance)
+        # blaa = input("\nwait...")
 
-# Find quickest way to any given location.  Update if a shorter distance is found.
+    # change input files if we need this
+    # print("Rnd1 Total:", Rnd1_total)
 
-## once we've explored the whole map, check the End location for smallest_distance.
+    # Rnd2:  Re-read fresh input, we kinda screwed up those lists
+    i = 0
+    Rnd2 = []
+    while i < total:
+        one = json.loads(lines[i])
+        two = json.loads(lines[i + 1])
+        i += 3
 
-print("Operations: ", op_counter)
-Print_Map(my_map, locations)
+        Rnd2.append(one)
+        Rnd2.append(two)
 
-print("Rnd1 Shortest Path: ", locations[(end[0], end[1])].smallest_distance)
-count = Find_First_A(locations[(end[0], end[1])].path, my_map)
-print("Rnd2 Path:", count)
+    Output = []
+    # give it a starting element
+    Output.append(Rnd2.pop(0))
+    Sorty_McSorter(Rnd2, Output)
+
+    for i in range(len(Output)):
+        if Output[i] == [[2]]:
+            two = i + 1
+        elif Output[i] == [[6]]:
+            six = i + 1
+    #        print(n)
+
+    print("Rnd2: ", two * six)
+
+
+# TODO Remember index count starts at 1!
