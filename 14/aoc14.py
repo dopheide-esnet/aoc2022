@@ -118,6 +118,75 @@ def Make_Sand_Happen(my_map):
         count += 1
 
 
+def Make_Sand_Forever(my_map):
+    # sand always starts at (500,0)
+
+    count = 0
+
+    # Setting conditions for Rnd2
+    my_map.maxy += 2
+    del my_map.locations[(500, 0)]
+    ## if we hit minx or maxx, update them.
+    # set "floor" at maxy
+    # and expand floor when we expand x
+
+    i = my_map.minx
+    while i <= my_map.maxx:
+        my_map.locations[(i, my_map.maxy)] = "#"
+        i += 1
+
+    Print_Map(my_map)
+
+    while 1:
+
+        # Enter new sand...
+        sandx = 500
+        sandy = 0
+        # loop over shit until sand falls off the map
+        while 1:
+            if (sandx, sandy + 1) not in my_map.locations:  # air below, keep going.
+                sandy += 1
+                if sandy > my_map.maxy:
+                    print(sandx, sandy)
+                    print("Error, we shouldn't get here with the new floor")
+                    exit()
+                    return count
+                continue
+
+            # directly below is solid
+            elif (
+                sandx - 1,
+                sandy + 1,
+            ) not in my_map.locations and sandy + 1 != my_map.maxy:
+                # left/down is available
+                sandx -= 1
+                sandy += 1
+
+                if sandx < my_map.minx:
+                    my_map.minx -= 1
+                    my_map.locations[(my_map.minx, my_map.maxy)] = "#"
+                continue
+            elif (
+                sandx + 1,
+                sandy + 1,
+            ) not in my_map.locations and sandy + 1 != my_map.maxy:
+                # Can't go left, try right.
+                sandx += 1
+                sandy += 1
+                if sandx > my_map.maxx:
+                    my_map.maxx += 1
+                    my_map.locations[(my_map.maxx, my_map.maxy)] = "#"
+                continue
+
+            else:  # this is our resting spot
+                if sandx == 500 and sandy == 0:
+                    return count + 1
+                my_map.locations[(sandx, sandy)] = "O"
+                break
+
+        count += 1
+
+
 def Print_Map(my_map):
     print("Min/Max X: ", my_map.minx, my_map.maxx)
     print("Min/Max Y: ", my_map.miny, my_map.maxy)
@@ -176,7 +245,9 @@ with open(file, "r") as stuff:
     my_map = Build_Map(lines)
 
     count = 0
-    count = Make_Sand_Happen(my_map)
+
+    #    count = Make_Sand_Happen(my_map)
+    count = Make_Sand_Forever(my_map)
     Print_Map(my_map)
 
     print("Rnd1 Count:", count)
