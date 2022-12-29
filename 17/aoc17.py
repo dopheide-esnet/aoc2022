@@ -22,14 +22,25 @@ def Check_Path_Left(rock, fuck_shit_stack, c_width):  # Reggie Watts reference
     elif y <= len(stack):
         # We're lower than the top of the stack
         rock_edge = []
-        stack_x = rock.x - 2
+        stack_x = rock.x - 2  # -1 for index, -1 for position
         for i in range(len(rock.shape)):
             rock_edge.append(rock.shape[i][0])
         
+#        print("Rock Edge:",rock_edge, y)
         row = len(rock_edge) - 1
         while(y <= len(fuck_shit_stack)):
+#            print("Comp", rock_edge[row], stack[y-1][stack_x])
             if(rock_edge[row]) == '#' and stack[y-1][stack_x] == '#':
                 result = False
+            elif(rock_edge[row] == '.'):
+                # check further
+                j = 0
+                while(rock.shape[row][j] == '.' and j < len(rock.shape[0])):
+                    next_edge = rock.shape[row][j+1]
+                    if(next_edge == "#" and stack[y-1][stack_x+j+1] == "#"):
+                        result = False
+                    j += 1
+
             row -= 1
             y += 1
             if(row < 0):
@@ -56,6 +67,18 @@ def Check_Path_Right(rock, fuck_shit_stack, c_width):  # Reggie Watts reference
         while(y <= len(fuck_shit_stack)):
             if(rock_edge[row]) == '#' and stack[y-1][stack_x] == '#':
                 result = False
+
+            elif(rock_edge[row] == '.'):
+                # check further
+                # this bit for moving right is not thoroughly tested
+                j = 0
+                while(rock.shape[row][j] == '.' and j < len(rock.shape[0])):
+                    next_edge = rock.shape[row][rock.width - j - 2]
+                    if(next_edge == "#" and stack[y-1][stack_x-j-1] == "#"):
+                        result = False
+                    j += 1
+
+
             row -= 1
             y += 1
 
@@ -138,7 +161,7 @@ def Print_Stack(stack):
         print("|%s|" % row)
     print("+-------+")
 
-testcase = True
+testcase = False
 if testcase:
     file = "test.txt"
     c_width = 7
@@ -164,6 +187,8 @@ shapes.append(['#',
 shapes.append(['##',
                '##'])
 
+
+
 with open(file, "r") as stuff:
     lines = stuff.read().splitlines()
 
@@ -179,6 +204,9 @@ with open(file, "r") as stuff:
             # Generate new rock
             cur_rock += 1
             The_Rock = Rock(shapes[next_shape], 3, len(stack)+4, )
+#            if(cur_rock == num_rocks):
+#                Print_Stack(stack)
+#                print(shapes[next_shape])
             next_shape += 1
             if(next_shape == len(shapes)):
                 next_shape = 0
@@ -188,9 +216,8 @@ with open(file, "r") as stuff:
         # AIR #
         #######
 
-        ### TODO, oh shit, we could run into the edge of another rock sideways
-        if(cur_rock == num_rocks):
-            print("Air:",air[next_air])
+#        if(cur_rock == num_rocks):
+#            print("Air:",air[next_air])
 
         if(air[next_air] == "<"):
             # try left.
@@ -224,5 +251,5 @@ with open(file, "r") as stuff:
                 Add_to_Stack(The_Rock, stack, c_width)
                 active = False
 
-    Print_Stack(stack)
-    print("Rnd1 Stack Height:",len(stack) - 1)
+#    Print_Stack(stack)
+    print("Rnd1 Stack Height:",len(stack))
