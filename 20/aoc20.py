@@ -2,9 +2,9 @@
 
 import re
 
-testcase = True
+testcase = False
 if testcase:
-    file = "test.txt"
+    file = "test2.txt"
 else:
     file = "input.txt"
 
@@ -33,12 +33,15 @@ def Unmix(lines):
             val = the_list.pop(i)
             val['moved'] = True
             if(val['num'] > 0):
-                how_many = val['num'] % list_len
+                if(val['num'] == 20):
+                    print("breakpoint")
+                # when we start skipping, remember the list is one shorter now.
+                how_many = val['num'] % (list_len -1 )
 #                print("Move this many:",how_many)
-                if(i + how_many < list_len):  # removed -1 
+                if(i + how_many < list_len -1 ):  # removed -1 
                     the_list.insert(i+how_many,val)
                     # i stays the same
-                elif(i + how_many == list_len):  
+                elif(i + how_many == list_len -1):  
                     # wrap
                     print("wrap to index 0")
                     the_list.insert(0,val)
@@ -50,7 +53,7 @@ def Unmix(lines):
                     i += 1
 
             elif(val['num'] < 0):
-                how_many = abs(val['num']) % list_len
+                how_many = abs(val['num']) % (list_len - 1)
                 if(i - how_many > 0):
                     the_list.insert(i - how_many, val)
                     # i should increase
@@ -94,7 +97,6 @@ with open(file, "r") as stuff:
     lines = stuff.read().splitlines()
     the_list = Unmix(lines)
 
-    print(the_list)
     print("Rnd1:",Coordinates(the_list))
 
 #    print(the_list)
