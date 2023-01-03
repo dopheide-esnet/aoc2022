@@ -2,12 +2,6 @@
 
 import re
 
-testcase = False
-if testcase:
-    file = "test2.txt"
-else:
-    file = "input.txt"
-
 def Unmix(lines):
     the_list = []
     for line in lines:
@@ -33,8 +27,6 @@ def Unmix(lines):
             val = the_list.pop(i)
             val['moved'] = True
             if(val['num'] > 0):
-                if(val['num'] == 20):
-                    print("breakpoint")
                 # when we start skipping, remember the list is one shorter now.
                 how_many = val['num'] % (list_len -1 )
 #                print("Move this many:",how_many)
@@ -93,11 +85,96 @@ def Coordinates(the_list):
 
     return the_list[r1]['num'] + the_list[r2]['num'] + the_list[r3]['num']
 
+def Embiggen_and_Prep(lines):
+    '''
+    We could just add this to the original list, but I'd like to keep
+    all of those test cases working separately for Rnd1
+    '''
+    big_list = []
+    for i in range(len(lines)):
+        # now we have to keep track of the original order
+        big_list.append({'num': int(lines[i]) * 811589153,
+                         'moved': False,
+                         'order': i})
+    return big_list
+
+
+def Find_Next(big_list,next):
+    '''
+    Searching through the list for the next index to work on.
+    There's probably a more efficient way, but 5000*10 isn't really that many
+    especially since we'll average half that.
+    '''
+    for i in range(len(big_list)):
+        if(big_list[i]['order'] == next):
+            return i
+
+def Big_Unmixer(big_list,rounds):
+    '''
+    The large numbers shouldn't matter too much since we're already using modulus
+    operations.  However, we do have to keep searching for where the next number is to move
+    as we can't rely on the index anymore for the original order.  Just keeping track of the
+    new index won't work because other operations will shift them around.
+    (Can probably ditch the 'order' T/F value.)
+    '''
+
+    list_len = len(big_list)
+    for rnd in range(rounds):
+        print("Round ",rnd+1,"... Fight!")
+        next = 0  # next up in the sorting priority
+
+        while(next < list_len):
+            i = Find_Next(big_list,next)
+
+            # Copy in our previous Unmix function, but replace 'i' increments with Find_Next
+            val = big_list.pop(i)
+            val['moved'] = True
+            if(val['num'] > 0):
+
+                # when we start skipping, remember the list is one shorter now.
+                how_many = val['num'] % (list_len -1 )
+                if(i + how_many < list_len -1 ):  # removed -1 
+                    big_list.insert(i+how_many,val)
+                elif(i + how_many == list_len -1):  
+                    # wrap
+                    big_list.insert(0,val)
+                else:
+                    big_list.insert( how_many + i - list_len + 1, val)
+
+            elif(val['num'] < 0):
+                how_many = abs(val['num']) % (list_len - 1)
+                if(i - how_many > 0):
+                    big_list.insert(i - how_many, val)
+                    # i should increase
+                elif(i - how_many == 0):  # the test case actually wraps this to the end
+                    # wrap to end
+                    big_list.append(val)
+                else:
+                    big_list.insert(i - how_many + list_len - 1, val)
+            else:
+                big_list.insert(i,val)
+
+            next += 1
+
+testcase = False
+if testcase:
+    file = "test.txt"
+    num_rounds = 10
+else:
+    file = "input.txt"
+    num_rounds = 10
+
 with open(file, "r") as stuff:
     lines = stuff.read().splitlines()
     the_list = Unmix(lines)
-
     print("Rnd1:",Coordinates(the_list))
 
-#    print(the_list)
-    # 1000th after the zero
+    ## Rnd2
+    big_list = Embiggen_and_Prep(lines)
+
+#    Big_Unmixer(big_list, num_rounds)
+    Big_Unmixer(big_list, num_rounds)
+
+    print("Rnd2 Coordinates:",Coordinates(big_list))
+
+
