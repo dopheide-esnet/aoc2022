@@ -55,6 +55,59 @@ def Climb_Tree(monkeys,name):
     else:
         monkeys[name].val = lv * rv
     
+
+def Climb_Backwards(monkeys,parents,needed_value):
+    '''
+    We know the value we need and via 'parents' we know which children we need
+    to check on.  I think we just reverse the math operation and give each
+    monkey a new value.
+    '''
+    cur_monkey = parents.pop()
+    human = False
+
+#    print("Current Monkey:",cur_monkey)
+
+    if(len(parents) > 0):
+        if(monkeys[cur_monkey].left_child != parents[len(parents)-1]):
+            # this is the value we can't influence.
+            static_val = monkeys[monkeys[cur_monkey].left_child].val
+            rev_op = "left"
+        else:
+            static_val = monkeys[monkeys[cur_monkey].right_child].val
+            rev_op = "right"
+    else:
+        if(monkeys[cur_monkey].left_child == "humn"):
+            static_val = monkeys[monkeys[cur_monkey].right_child].val
+            rev_op = "right"
+            human = True
+        else:
+            static_val = monkeys[monkeys[cur_monkey].left_child].val
+            rev_op = "left"
+            human = True        
+
+#    print("Rev:",rev_op)
+
+    op = monkeys[cur_monkey].operator
+    if(op == "+"):
+        new_val = needed_value - static_val
+    elif(op == "*"):
+        new_val = needed_value / static_val
+    elif(op == "-" and rev_op == "right"):
+        new_val = needed_value + static_val
+    elif(op == "-" and rev_op == "left"):
+        new_val = static_val - needed_value
+    elif(op == "/" and rev_op == "right"):
+        new_val = needed_value * static_val
+    elif(op == "/" and rev_op == "left"):
+        new_val = static_val / needed_value
+
+    monkeys[cur_monkey].val = new_val   # not really necessary, but helps with debugging
+
+    if(human == True):
+        print("Rnd2 humn:",int(new_val))
+    else:
+        Climb_Backwards(monkeys,parents,new_val)
+
 testcase = False
 if testcase:
     file = "test.txt"
@@ -84,8 +137,36 @@ with open(file, "r") as stuff:
                 exit()
 
     Monkeys_Need_Parents_Too(monkeys,"root")
+    
     Climb_Tree(monkeys,"root")
 
 #    Print_Monkeys(monkeys)
     print("Rnd1:",int(monkeys["root"].val))
+
+    # Rnd 2
+    # Determine whether 'humn' is in the left or right branch of 'root'
+    # That tells us which value we need to equate to.
+
+    # Find human and keep track of parental path
+    parents = []
+    parent = monkeys['humn'].parent
+    parents.append(parent)
+    while(parent != 'root'):
+        child = parent
+        parent = monkeys[parent].parent
+        parents.append(parent)
+    # Child should be one of root's kids, we want the other one.
+#    print("child:",child)
+    if(monkeys['root'].left_child == child):
+        needed_value = monkeys[monkeys['root'].right_child].val
+    else:
+        needed_value = monkeys[monkeys['root'].left_child].val
+
+    parents.pop()  # get 'root' off there, we know that already
+
+#    Print_Monkeys(monkeys)
+    Climb_Backwards(monkeys,parents,needed_value)
+
+
+
 
