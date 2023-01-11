@@ -93,14 +93,17 @@ def Search_Moves(e, map):
 
     options = []
 
-    if(map[y+1][x][0] == '.'):
-        options.append('down')
+    if(y < len(map)-1):
+        if(map[y+1][x][0] == '.'):
+            options.append('down')
+
     if(map[y][x+1][0] == '.'):
         options.append('right')
     if(map[y][x-1][0] == '.'):
         options.append('left')
 
-    if(map[y-1][x][0] == '.' and y>1):  # don't move up from home
+#    if(map[y-1][x][0] == '.' and y>1):  # don't move up from home
+    if(map[y-1][x][0] == '.'):
         options.append('up')
     #do 'stay' last, it's the least likely to help in the long run.
     if(map[y][x][0] == '.'):
@@ -108,102 +111,7 @@ def Search_Moves(e, map):
 
     return options
 
-
-def OldMove(e,map,positions,clock):
-    '''
-    
-    TODO: optimization, if clock > any successful return count, end that attempt
-
-    Assumption, it appears we're allowed to move 'through' a blizzard as long as
-    we don't end up in the same space.
-    '''
-
-    # Try to speed things up by not returning to the same spot too often.
-    if(e in positions):
-        if(positions[e] > 4):   # arbitruary number.  # but we may need to 'stay' in a spot longer than this
-            return -1
-        else:
-            positions[e] += 1
-    else:
-        positions[e] = 1
-    
-    # this could be a lot of memory..
-    pos = copy.deepcopy(positions)
-
-    # options are stay, up, down, left, right
-    # keep in mind a blizzard may move to where we are now.
-    # if there are no options, staying may not be one either ending this path.
-    options = Search_Moves(e, map)
-
-    if(len(options) == 0):
-#        print("Dead End")
-        return -1
-
-    if(clock > 100):
-#        print("Max clock reached")
-        return -1
-
-    new_map = Blizzards(map) # this is the new blizzard positions at clock + 1
-    clock += 1
-
-    ## We're going to need to keep track of where we've been and not go back there too many times.
-
-    (y, x) = e
-    min_ret = 0
-    for op in options:
-#        print("clock:",clock,op,e)
-        if(op == 'down'):
-            e = (y+1,x)
-            if(e == (len(map)-1,len(map[0])-2)):
-                print("Found the End!",clock-1)
-                return clock - 1
-#                ret = clock - 1
-            else:
-                ret = Move(e,new_map,pos,clock)
-                if(ret != -1 and ret != 0):
-                    if(min_ret == 0):
-                        min_ret = ret
-                    elif(ret < min_ret):
-                        min_ret = ret
-        elif(op == 'left'):
-            e = (y,x-1)
-            ret = Move(e,new_map,pos,clock)
-            if(ret != -1 and ret != 0):
-                if(min_ret == 0):
-                    min_ret = ret
-                elif(ret < min_ret):
-                    min_ret = ret
-        elif(op == 'right'):
-            e = (y,x+1)
-            ret = Move(e,new_map,pos,clock)
-            if(ret != -1 and ret != 0):
-                if(min_ret == 0):
-                    min_ret = ret
-                elif(ret < min_ret):
-                    min_ret = ret            
-        elif(op == 'up'):
-            e = (y-1,x)
-            ret = Move(e,new_map,pos,clock)
-            if(ret != -1 and ret != 0):
-                if(min_ret == 0):
-                    min_ret = ret
-                elif(ret < min_ret):
-                    min_ret = ret
-        elif(op == 'stay'):
-            # need to do something to prevent the loop where it stays at home forever.
-            if(clock > 10 and e == (0,1)):
-                print("skip stay at home")
-            else:
-                ret = Move(e,new_map,pos,clock)
-                if(ret != -1 and ret != 0):
-                    if(min_ret == 0):
-                        min_ret = ret
-                    elif(ret < min_ret):
-                        min_ret = ret
-    return min_ret
-
-
-def Move(map,cycles,positions,never):
+def Move(map,cycles,positions,never, goal):
     '''
     TODO: optimization, if clock > any successful return count, end that attempt
 
@@ -241,16 +149,16 @@ def Move(map,cycles,positions,never):
             elif(op == 'stay'):
                 e = (y,x)
 
-            if(e == (len(map)-1,len(map[0])-2)):
-                print("Found the End!",clock)
-                return {'map': new_map, 'res': True}
-
             if(e not in never):
                 if(e not in positions):
                     positions[e]=list()
                 positions[e].append(clock)
                 if(e not in cycles[clock]):
                     cycles[clock].append(e)
+
+            if(e == goal):
+                print("Found the End!",clock)
+                return {'map': new_map, 'res': True}
 
     return {'map': new_map, 'res': False}
 
@@ -291,17 +199,11 @@ positions[e] = list()
 positions[e] = [0]
 
 never_going_back_again = []
+goal = (len(map)-1,len(map[0])-2)
 
 while(1):
-#for i in range(20):
-#
-#    if(len(never_going_back_again) % 10 == 0):
-#        if(len(never_going_back_again) > 0):
-#            print("Never:",len(never_going_back_again))
 
-#    print(positions)
-#    print(cycles[max(cycles.keys())])
-    r = Move(map, cycles, positions, never_going_back_again)
+    r = Move(map, cycles, positions, never_going_back_again, goal)
     map = r['map']
     if(r['res'] == True):
         break
@@ -320,7 +222,6 @@ while(1):
         i = cycles[clock].index(e)
         cycles[clock].pop(i)
 
-
 if(r['res'] == False):
     print("oops")
     exit()
@@ -328,18 +229,87 @@ if(r['res'] == False):
 #print(positions)
 print("Rnd1:",max(cycles.keys()))
 
+# For Rnd2 I'm just gonna copy some code cause I'm tired of this day.
 
-# determine next blizzard positions, we can't stop that from happening.
-# since blizzards can overlap and we still have to know where each is headed
-# either each map location has to track that or we have to track each individual
-# blizzard and generate the map from there.
-# I think having that info embedded in the map will make it easier to move the expedition around.
-#map = Blizzards(map)
+e = (len(map)-1, len(map[0])-2)    
+clock = max(cycles.keys())
+cycles = {}
+cycles[clock] = list()   # reset cycles
+cycles[clock].append(e)
+
+positions = {}    # dict of positions
+positions[e] = list()
+positions[e] = [0]
+
+never_going_back_again = []
+goal = (0,1)
+
+while(1):
+#for i in range(35):
+    r = Move(map, cycles, positions, never_going_back_again, goal)
+    map = r['map']
+    if(r['res'] == True):
+        break
+
+    # Cleanup
+    clock = max(cycles.keys())
+    killlist = []
+
+    for e in cycles[clock]:
+        if(len(positions[e]) > 20):  # had to adjust this
+            killlist.append(e)
+            if(e not in never_going_back_again):
+                never_going_back_again.append(e)
+    for e in killlist:
+        i = cycles[clock].index(e)
+        cycles[clock].pop(i)
+
+if(r['res'] == False):
+    print("oops")
+    exit()
 
 
-# then see what our options are.
+e = (0,1)    
+clock = max(cycles.keys())
+cycles = {}
+cycles[clock] = list()   # reset cycles
+cycles[clock].append(e)
+
+positions = {}    # dict of positions
+positions[e] = list()
+positions[e] = [0]
+
+never_going_back_again = []
+goal = (len(map)-1, len(map[0])-2) 
+
+while(1):
+#for i in range(35):
+    r = Move(map, cycles, positions, never_going_back_again, goal)
+    map = r['map']
+    if(r['res'] == True):
+        break
+
+    # Cleanup
+    clock = max(cycles.keys())
+    killlist = []
+
+    for e in cycles[clock]:
+        if(len(positions[e]) > 20):  # had to adjust this
+            killlist.append(e)
+            if(e not in never_going_back_again):
+                never_going_back_again.append(e)
+    for e in killlist:
+        i = cycles[clock].index(e)
+        cycles[clock].pop(i)
+
+if(r['res'] == False):
+    print("oops")
+    exit()
 
 
+
+
+print("Rnd2:",max(cycles.keys()))
 
 
 
